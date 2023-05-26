@@ -180,6 +180,7 @@ class Metric:
         del d["category"]
         d.pop("_config", None)
         d.pop("_generate_enums", None)
+        d.pop("_generate_structure", None)
         return d
 
     def _serialize_input(self) -> Dict[str, util.JSONType]:
@@ -437,7 +438,9 @@ class Object(Metric):
     typename = "object"
 
     def __init__(self, *args, **kwargs):
-        self.structure = self.validate_structure(kwargs.pop("structure", None))
+        self._generate_structure = self.validate_structure(
+            kwargs.pop("structure", None)
+        )
         super().__init__(*args, **kwargs)
 
     ALLOWED_TOPLEVEL = {"type", "properties", "items"}
@@ -488,10 +491,8 @@ class Object(Metric):
         if structure is None:
             raise ValueError("`structure` needed for object metric.")
 
-        # TODO: validate structure
         structure = Object._validate_substructure(structure)
-
-        return json.dumps(structure)
+        return structure
 
 
 ObjectTree = Dict[str, Dict[str, Union[Metric, pings.Ping, tags.Tag]]]
