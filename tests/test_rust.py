@@ -106,8 +106,8 @@ def test_ping_parser(tmpdir):
 def test_rust_generator():
     kdf = rust.rust_datatypes_filter
 
-    assert kdf("\n") == '"\n".into()'
-    assert kdf([42, "\n"]) == 'vec![42, "\n".into()]'
+    assert kdf("\n") == '"\\n".into()'
+    assert kdf([42, "\n"]) == 'vec![42, "\\n".into()]'
     assert kdf(metrics.Lifetime.ping) == "Lifetime::Ping"
 
 
