@@ -507,6 +507,7 @@ extra_metric_args = [
     "bucket_count",
     "histogram_type",
     "numerators",
+    "structure",
 ]
 
 

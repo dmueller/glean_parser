@@ -433,4 +433,65 @@ class Text(Metric):
     typename = "text"
 
 
+class Object(Metric):
+    typename = "object"
+
+    def __init__(self, *args, **kwargs):
+        self.structure = self.validate_structure(kwargs.pop("structure", None))
+        super().__init__(*args, **kwargs)
+
+    ALLOWED_TOPLEVEL = {"type", "properties", "items"}
+    ALLOWED_TYPES = ["object", "array", "number", "string", "boolean"]
+
+    @staticmethod
+    def _validate_substructure(structure):
+        if not isinstance(structure, dict):
+            raise ValueError(
+                f"Nested structure needs to be an object, got: {type(structure)}"
+            )
+
+        extra = set(structure.keys()) - Object.ALLOWED_TOPLEVEL
+        if extra:
+            extra = ", ".join(extra)
+            allowed = ", ".join(Object.ALLOWED_TOPLEVEL)
+            raise ValueError(
+                f"Found additional fields: {extra}. Only allowed: {allowed}"
+            )
+
+        typ = structure.get("type")
+        if not typ:
+            raise ValueError("`type` required for nested structure")
+
+        if typ not in Object.ALLOWED_TYPES:
+            allowed = ", ".join(Object.ALLOWED_TYPES)
+            raise ValueError(f"Invalid type: {typ}. Only allowed: {allowed}")
+
+        if typ == "object":
+            if "items" in structure:
+                raise ValueError("`items` not allowed in object structure")
+
+            for key in structure["properties"]:
+                value = structure["properties"][key]
+                structure["properties"][key] = Object._validate_substructure(value)
+
+        if typ == "array":
+            if "properties" in structure:
+                raise ValueError("`properties` not allowed in array structure")
+
+            value = structure["items"]
+            structure["items"] = Object._validate_substructure(value)
+
+        return structure
+
+    @staticmethod
+    def validate_structure(structure):
+        if structure is None:
+            raise ValueError("`structure` needed for object metric.")
+
+        # TODO: validate structure
+        structure = Object._validate_substructure(structure)
+
+        return json.dumps(structure)
+
+
 ObjectTree = Dict[str, Dict[str, Union[Metric, pings.Ping, tags.Tag]]]
